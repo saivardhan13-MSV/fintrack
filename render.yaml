@@ -1,0 +1,27 @@
+# Render Blueprint: deploys the app as a free web service.
+# Render dashboard -> New -> Blueprint -> select this repository.
+services:
+  - type: web
+    name: fintrack
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn fintrack.main:create_app --factory --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      # The free plan's disk is reset on every restart, so the demo account is
+      # re-created at startup and SQLite is fine. Use a managed PostgreSQL URL
+      # here instead if data needs to persist.
+      - key: FINTRACK_DATABASE_URL
+        value: sqlite:///./fintrack.db
+      - key: FINTRACK_SEED_DEMO
+        value: "true"
+      - key: FINTRACK_JWT_SECRET
+        generateValue: true
+      # Lower than the 600k default so sign-in stays fast on the free plan's shared
+      # CPU. Acceptable here because the hosted demo only holds sample data.
+      - key: FINTRACK_PASSWORD_HASH_ITERATIONS
+        value: "210000"

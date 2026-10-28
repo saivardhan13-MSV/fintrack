@@ -2,6 +2,9 @@
 
 const API = "/api/v1";
 const TOKEN_KEY = "fintrack.token";
+// Public sample account (see fintrack/demo.py); holds only generated data.
+const DEMO_EMAIL = "demo@fintrack.dev";
+const DEMO_PASSWORD = "demo-password-123";
 const CATEGORY_COLORS = ["#2f6fde", "#12a37a", "#e8853d", "#9b5de5", "#e04f6b", "#2bb3c0",
                          "#c8a12b", "#7a8699"];
 
@@ -412,6 +415,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("auth-form").addEventListener("submit", onAuthSubmit);
   $("auth-toggle").addEventListener("click", () => setAuthMode(!registering));
+  $("demo-login").addEventListener("click", () => {
+    const form = $("auth-form");
+    setAuthMode(false);
+    form.email.value = DEMO_EMAIL;
+    form.password.value = DEMO_PASSWORD;
+    form.requestSubmit();
+  });
   $("logout").addEventListener("click", signOut);
   $("month").addEventListener("change", () => { if (selectedMonth()) loadDashboard(); });
   $("txn-form").addEventListener("submit", onAddTransaction);

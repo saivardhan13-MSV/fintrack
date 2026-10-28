@@ -120,6 +120,14 @@ log in with the same account, and try:
 - `GET /api/v1/budgets/status`
 - `GET /api/v1/reports/monthly-trend`
 
+### Deploy for free on Render
+
+[`render.yaml`](render.yaml) deploys the app as a free Render web service: in the Render
+dashboard choose **New → Blueprint** and select this repository. Every push to `main`
+redeploys automatically. The free plan resets its disk on restart, so the hosted demo
+recreates the demo account at startup (`FINTRACK_SEED_DEMO=true`) and sleeps after
+15 minutes idle (the first visit afterwards takes up to a minute to wake it).
+
 ### With Docker (PostgreSQL)
 
 ```bash

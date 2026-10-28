@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     password_hash_iterations: int = 600_000  # OWASP 2023 guidance for PBKDF2-SHA256
     max_upload_bytes: int = 5 * 1024 * 1024
     log_level: str = "INFO"
+    # Hosted demos: load the demo account's data on every startup.
+    seed_demo: bool = False
 
 
 @lru_cache

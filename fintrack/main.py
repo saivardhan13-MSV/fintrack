@@ -3,6 +3,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import date
 from pathlib import Path
 
 from fastapi import FastAPI, Request, Response
@@ -11,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 
-from . import models  # noqa: F401  (registers tables on Base.metadata)
+from . import demo, models  # noqa: F401  (models registers tables on Base.metadata)
 from .config import Settings, get_settings
 from .database import Base, make_engine
 from .errors import register_exception_handlers
@@ -29,9 +30,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     engine = make_engine(settings.database_url)
 
+    session_factory = sessionmaker(engine, expire_on_commit=False)
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         Base.metadata.create_all(engine)
+        if settings.seed_demo:
+            with session_factory() as db:
+                result = demo.seed(db, settings, date.today())
+            logger.info("Seeded demo data: %d new transactions", result.imported.imported)
         yield
         engine.dispose()
 
@@ -43,7 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
-    app.state.session_factory = sessionmaker(engine, expire_on_commit=False)
+    app.state.session_factory = session_factory
 
     @app.middleware("http")
     async def request_context(

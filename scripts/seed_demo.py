@@ -1,109 +1,37 @@
-"""Generate a realistic year of bank activity and load it for a demo user.
+"""Load a realistic year of bank activity for a demo user.
 
-    python -m scripts.seed_demo            # writes sample_data/demo_statement.csv and seeds the DB
+    python -m scripts.seed_demo     # writes sample_data/demo_statement.csv and seeds the DB
 
-Then log in at /docs as demo@fintrack.dev / demo-password-123 and try
-POST /api/v1/subscriptions/detect to watch the recurrence detector find the subscriptions.
+Then sign in at http://localhost:8000 as demo@fintrack.dev / demo-password-123.
 """
 
-import csv
-import random
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fintrack.config import get_settings
 from fintrack.database import Base, make_engine
-from fintrack.dates import add_months
-from fintrack.models import User
-from fintrack.schemas import BudgetUpsert
-from fintrack.security import hash_password
-from fintrack.services import budgets, subscriptions, transactions
+from fintrack.demo import DEMO_EMAIL, DEMO_PASSWORD, generate_rows, seed, statement_csv
 
-DEMO_EMAIL = "demo@fintrack.dev"
-DEMO_PASSWORD = "demo-password-123"
 CSV_PATH = Path(__file__).resolve().parent.parent / "sample_data" / "demo_statement.csv"
-
-# (description, amount, category, day of month, first month index, price change month index)
-SUBSCRIPTIONS = [
-    ("NETFLIX.COM 866-579-7172", 15.49, "Streaming", 3, 0, (9, 17.99)),
-    ("SPOTIFY USA*P2A9F1", 10.99, "Streaming", 12, 0, None),
-    ("APPLE.COM/BILL ICLOUD 866-712", 2.99, "Cloud", 21, 2, None),
-    ("PAYPAL *HULU 402-935-7733", 7.99, "Streaming", 8, 0, None),
-    ("ADOBE *CREATIVE CLOUD", 22.99, "Software", 15, 4, None),
-]
-
-
-def generate_rows(today: date) -> list[tuple[str, str, str, str]]:
-    rng = random.Random(42)  # deterministic demo data
-    start = add_months(today.replace(day=1), -11)
-    rows: list[tuple[date, str, float, str]] = []
-
-    for m in range(12):
-        month_start = add_months(start, m)
-        rows.append((month_start, "PAYROLL ACME CORP", 5200.00, "Salary"))
-        rows.append((month_start + timedelta(days=1), "ACH OAKWOOD APARTMENTS", -1850.00, "Rent"))
-        rows.append(
-            (month_start + timedelta(days=17), "CITY UTILITIES", -round(rng.uniform(60, 140), 2),
-             "Utilities")
-        )
-        for desc, price, category, day, first, change in SUBSCRIPTIONS:
-            # Hulu was cancelled four months ago, so the detector should ignore it.
-            if m < first or (desc.startswith("PAYPAL *HULU") and m > 7):
-                continue
-            amount = change[1] if change and m >= change[0] else price
-            rows.append((month_start.replace(day=day), desc, -amount, category))
-
-    day = start
-    while day <= today:
-        if rng.random() < 0.35:
-            store = rng.choice(["WHOLE FOODS #102", "TRADER JOES #55", "SAFEWAY 0412"])
-            rows.append((day, f"POS {store}", -round(rng.uniform(25, 160), 2), "Groceries"))
-        if rng.random() < 0.25:
-            place = rng.choice(["SQ *BLUE BOTTLE COFFEE", "CHIPOTLE 1234", "TST* SWEETGREEN"])
-            rows.append((day, place, -round(rng.uniform(6, 45), 2), "Dining"))
-        if rng.random() < 0.08:
-            rows.append((day, "AMAZON MKTPLACE PMTS", -round(rng.uniform(15, 220), 2), "Shopping"))
-        day += timedelta(days=1)
-
-    rows = [r for r in rows if r[0] <= today]
-    rows.sort(key=lambda r: r[0])
-    return [(d.isoformat(), desc, f"{amt:.2f}", cat) for d, desc, amt, cat in rows]
 
 
 def main() -> None:
     today = date.today()
-    rows = generate_rows(today)
     CSV_PATH.parent.mkdir(exist_ok=True)
-    with CSV_PATH.open("w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["date", "description", "amount", "category"])
-        writer.writerows(rows)
+    CSV_PATH.write_text(statement_csv(generate_rows(today)), encoding="utf-8")
 
     settings = get_settings()
     engine = make_engine(settings.database_url)
     Base.metadata.create_all(engine)
     with Session(engine, expire_on_commit=False) as db:
-        user = db.scalar(select(User).where(User.email == DEMO_EMAIL))
-        if user is None:
-            user = User(
-                email=DEMO_EMAIL,
-                hashed_password=hash_password(DEMO_PASSWORD, settings.password_hash_iterations),
-            )
-            db.add(user)
-            db.commit()
+        result = seed(db, settings, today)
 
-        result = transactions.import_csv(db, user.id, CSV_PATH.read_text())
-        # Limits chosen so the demo shows a mix of on-track, warning and over-budget states.
-        for category, limit in [("Groceries", "1400"), ("Dining", "400"), ("Shopping", "400")]:
-            budgets.upsert(db, user.id, BudgetUpsert(category=category, monthly_limit=limit))
-        detection = subscriptions.detect(db, user.id, today, apply=False)
-
-    print(f"Wrote {len(rows)} rows to {CSV_PATH}")
-    print(f"Imported {result.imported} (skipped {result.duplicates_skipped} duplicates)")
-    print(f"Detectable subscriptions: {[d.merchant for d in detection.detected]}")
+    print(f"Wrote {result.rows} rows to {CSV_PATH}")
+    print(f"Imported {result.imported.imported} "
+          f"(skipped {result.imported.duplicates_skipped} duplicates)")
+    print(f"Detectable subscriptions: {[d.merchant for d in result.detection.detected]}")
     print(f"Log in as {DEMO_EMAIL} / {DEMO_PASSWORD}")
 
 

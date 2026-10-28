@@ -19,9 +19,10 @@
              minlength="8" required></label>
       <p class="error" id="auth-error" role="alert"></p>
       <button type="submit" class="btn primary" id="auth-submit">Sign in</button>
+      <button type="button" class="btn" id="demo-login">Use demo account</button>
       <button type="button" class="link" id="auth-toggle">New here? Create an account</button>
-      <p class="hint">Demo data: run <code>python -m scripts.seed_demo</code>, then sign in as
-        <code>demo@fintrack.dev</code> / <code>demo-password-123</code></p>
+      <p class="hint">The demo account has a year of sample transactions, budgets and
+        subscriptions. Run <code>python -m scripts.seed_demo</code> first when running locally.</p>
     </form>
   </main>
 
@@ -44,7 +45,7 @@
         <div class="card kpi"><span>Expenses</span><strong id="kpi-expenses">–</strong></div>
         <div class="card kpi"><span>Remaining balance</span><strong id="kpi-balance">–</strong></div>
         <div class="card kpi"><span>Savings rate</span><strong id="kpi-savings">–</strong></div>
-        <div class="card kpi"><span>Subscriptions / mo</span><strong id="kpi-subs">–</strong></div>
+        <div class="card kpi"><span>Recurring bills / mo</span><strong id="kpi-subs">–</strong></div>
       </section>
 
       <section class="grid two">
