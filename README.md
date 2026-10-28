@@ -5,8 +5,12 @@ expenses, monthly budgets and recurring bills. It
 **automatically discovers subscriptions hidden in your bank statements**, forecasts
 renewals, flags price increases and warns before you overspend.
 
+**🔗 Live demo: [fintrack-ub62.onrender.com](https://fintrack-ub62.onrender.com)**: click
+**Use demo account** to sign in. (Free hosting: the first visit after a quiet period can
+take up to a minute to wake the server.)
+
 **Stack:** Python 3.12 · FastAPI · SQLAlchemy 2.0 · PostgreSQL / SQLite · Pydantic v2 ·
-JWT auth · Chart.js dashboard · pytest (56 tests, 98% coverage) · Git · Jenkins CI/CD ·
+JWT auth · Chart.js dashboard · pytest (58 tests, 98% coverage) · Git · Jenkins CI/CD ·
 Docker · ruff · mypy
 
 ---
