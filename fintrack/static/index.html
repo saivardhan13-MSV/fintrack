@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FinTrack</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <!-- Sign-in -->
+  <main id="auth-view" class="auth" hidden>
+    <form id="auth-form" class="card auth-card" novalidate>
+      <h1 class="brand">Fin<span>Track</span></h1>
+      <p class="muted" id="auth-subtitle">Sign in to your account</p>
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password"
+             minlength="8" required></label>
+      <p class="error" id="auth-error" role="alert"></p>
+      <button type="submit" class="btn primary" id="auth-submit">Sign in</button>
+      <button type="button" class="link" id="auth-toggle">New here? Create an account</button>
+      <p class="hint">Demo data: run <code>python -m scripts.seed_demo</code>, then sign in as
+        <code>demo@fintrack.dev</code> / <code>demo-password-123</code></p>
+    </form>
+  </main>
+
+  <!-- Dashboard -->
+  <div id="app-view" hidden>
+    <header class="topbar">
+      <h1 class="brand">Fin<span>Track</span></h1>
+      <div class="topbar-actions">
+        <label class="month-picker">Month <input type="month" id="month"></label>
+        <span class="muted" id="user-email"></span>
+        <button class="btn ghost" id="logout">Sign out</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <p class="error banner" id="app-error" role="alert" hidden></p>
+
+      <section class="kpis" aria-label="Monthly summary">
+        <div class="card kpi"><span>Income</span><strong id="kpi-income">–</strong></div>
+        <div class="card kpi"><span>Expenses</span><strong id="kpi-expenses">–</strong></div>
+        <div class="card kpi"><span>Remaining balance</span><strong id="kpi-balance">–</strong></div>
+        <div class="card kpi"><span>Savings rate</span><strong id="kpi-savings">–</strong></div>
+        <div class="card kpi"><span>Subscriptions / mo</span><strong id="kpi-subs">–</strong></div>
+      </section>
+
+      <section class="grid two">
+        <div class="card">
+          <h2>Spending by category</h2>
+          <div class="chart-wrap"><canvas id="category-chart" aria-label="Spending by category"></canvas></div>
+          <table class="table compact" id="category-table"></table>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Budget usage</h2>
+          </div>
+          <div id="budget-list" class="budget-list"></div>
+          <form id="budget-form" class="inline-form">
+            <input name="category" placeholder="Category" required maxlength="64">
+            <input name="monthly_limit" type="number" placeholder="Monthly limit" min="0.01" step="0.01" required>
+            <button class="btn">Set budget</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="grid two">
+        <div class="card">
+          <h2>Income vs. expenses (6 months)</h2>
+          <div class="chart-wrap"><canvas id="trend-chart" aria-label="Income and expenses by month"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Recurring bills, next 30 days</h2>
+            <strong id="bills-total"></strong>
+          </div>
+          <ul id="bills-list" class="list"></ul>
+          <div class="card-head detect-head">
+            <h3>Find subscriptions in my transactions</h3>
+            <button class="btn" id="detect-btn">Scan</button>
+          </div>
+          <ul id="detect-list" class="list"></ul>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Transactions</h2>
+          <label class="btn ghost file-btn">Import CSV
+            <input type="file" id="csv-input" accept=".csv,text/csv" hidden>
+          </label>
+        </div>
+        <form id="txn-form" class="inline-form txn-form">
+          <input name="occurred_on" type="date" required aria-label="Date">
+          <input name="description" placeholder="Description" required maxlength="255">
+          <input name="amount" type="number" placeholder="Amount" min="0.01" step="0.01" required>
+          <select name="kind" aria-label="Type">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+          <input name="category" placeholder="Category" maxlength="64">
+          <button class="btn primary">Add</button>
+        </form>
+        <p class="muted" id="import-result"></p>
+        <div class="table-scroll">
+          <table class="table" id="txn-table">
+            <thead><tr><th>Date</th><th>Merchant</th><th>Category</th>
+              <th class="num">Amount</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="muted" id="txn-count"></p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

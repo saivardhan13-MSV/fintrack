@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fintrack
+      POSTGRES_PASSWORD: fintrack
+      POSTGRES_DB: fintrack
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintrack"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      FINTRACK_DATABASE_URL: postgresql+psycopg://fintrack:fintrack@db:5432/fintrack
+      FINTRACK_JWT_SECRET: ${FINTRACK_JWT_SECRET:-local-docker-secret-change-me-before-deploying}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
